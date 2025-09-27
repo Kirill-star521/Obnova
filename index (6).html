@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Викторина: Столицы мира</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .active {
+            display: block;
+        }
+
+        .level-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            margin: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 200px;
+            transition: background 0.3s;
+        }
+
+        .level-btn:hover {
+            background: #45a049;
+        }
+
+        .option-btn {
+            background: #f1f1f1;
+            border: 1px solid #ddd;
+            padding: 12px;
+            margin: 8px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            transition: background 0.3s;
+        }
+
+        .option-btn:hover {
+            background: #e9e9e9;
+        }
+
+        .option-btn.correct {
+            background: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .option-btn.incorrect {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .next-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .progress {
+            height: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #4CAF50;
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        .result {
+            font-size: 24px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Экран выбора уровня -->
+        <div id="level-screen" class="screen active">
+            <h1>Викторина: Столицы мира</h1>
+            <p>Выберите уровень сложности:</p>
+            <button class="level-btn" onclick="startGame(1)">Уровень 1: Новичок</button><br>
+            <button class="level-btn" onclick="startGame(2)">Уровень 2: Любитель</button><br>
+            <button class="level-btn" onclick="startGame(3)">Уровень 3: Опытный</button><br>
+            <button class="level-btn" onclick="startGame(4)">Уровень 4: Эксперт</button><br>
+            <button class="level-btn" onclick="startGame(5)">Уровень 5: Мастер</button>
+        </div>
+
+        <!-- Экран вопроса -->
+        <div id="question-screen" class="screen">
+            <div class="progress">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div id="question-number">Вопрос 1/5</div>
+            <h2 id="question-text">Какая столица у страны?</h2>
+            <div id="options-container"></div>
+            <button class="next-btn" id="next-btn" onclick="nextQuestion()" style="display:none;">Следующий вопрос</button>
+        </div>
+
+        <!-- Экран результатов -->
+        <div id="result-screen" class="screen">
+            <h1>Результаты</h1>
+            <div class="result" id="final-score">0/5</div>
+            <p id="result-message"></p>
+            <button class="level-btn" onclick="restartGame()">Играть снова</button>
+        </div>
+    </div>
+
+    <script>
+        // База данных вопросов с правильными окончаниями
+        const questions = {
+            1: [
+                {country: "Россия", countryGenitive: "России", capital: "Москва"},
+                {country: "Франция", countryGenitive: "Франции", capital: "Париж"},
+                {country: "Германия", countryGenitive: "Германии", capital: "Берлин"},
+                {country: "Италия", countryGenitive: "Италии", capital: "Рим"},
+                {country: "Испания", countryGenitive: "Испании", capital: "Мадрид"}
+            ],
+            2: [
+                {country: "Япония", countryGenitive: "Японии", capital: "Токио"},
+                {country: "Китай", countryGenitive: "Китая", capital: "Пекин"},
+                {country: "Бразилия", countryGenitive: "Бразилии", capital: "Бразилиа"},
+                {country: "Канада", countryGenitive: "Канады", capital: "Оттава"},
+                {country: "Австралия", countryGenitive: "Австралии", capital: "Канберра"}
+            ],
+            3: [
+                {country: "Аргентина", countryGenitive: "Аргентины", capital: "Буэнос-Айрес"},
+                {country: "Египет", countryGenitive: "Египта", capital: "Каир"},
+                {country: "Индия", countryGenitive: "Индии", capital: "Нью-Дели"},
+                {country: "Мексика", countryGenitive: "Мексики", capital: "Мехико"},
+                {country: "ЮАР", countryGenitive: "ЮАР", capital: "Претория"}
+            ],
+            4: [
+                {country: "Турция", countryGenitive: "Турции", capital: "Анкара"},
+                {country: "Польша", countryGenitive: "Польши", capital: "Варшава"},
+                {country: "Украина", countryGenitive: "Украины", capital: "Киев"},
+                {country: "Нидерланды", countryGenitive: "Нидерландов", capital: "Амстердам"},
+                {country: "Чехия", countryGenitive: "Чехии", capital: "Прага"}
+            ],
+            5: [
+                {country: "Малайзия", countryGenitive: "Малайзии", capital: "Куала-Лумпур"},
+                {country: "Эфиопия", countryGenitive: "Эфиопии", capital: "Аддис-Абеба"},
+                {country: "Перу", countryGenitive: "Перу", capital: "Лима"},
+                {country: "Вьетнам", countryGenitive: "Вьетнама", capital: "Ханой"},
+                {country: "Казахстан", countryGenitive: "Казахстана", capital: "Астана"}
+            ]
+        };
+
+        let currentLevel = 1;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let currentQuestions = [];
+
+        // Начать игру на выбранном уровне
+        function startGame(level) {
+            currentLevel = level;
+            currentQuestionIndex = 0;
+            score = 0;
+            currentQuestions = [...questions[level]];
+            shuffleArray(currentQuestions);
+            
+            showScreen('question-screen');
+            showQuestion();
+        }
+
+        // Показать вопрос
+        function showQuestion() {
+            const question = currentQuestions[currentQuestionIndex];
+            // Используем родительный падеж для правильного склонения
+            document.getElementById('question-text').textContent = `Какая столица у ${question.countryGenitive}?`;
+            document.getElementById('question-number').textContent = `Вопрос ${currentQuestionIndex + 1}/5`;
+            document.getElementById('progress-bar').style.width = `${((currentQuestionIndex + 1) / 5) * 100}%`;
+            
+            // Очистить контейнер с вариантами ответов
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            // Получить варианты ответов
+            const options = getOptions(question.capital);
+            
+            // Создать кнопки для каждого варианта ответа
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.className = 'option-btn';
+                button.textContent = option;
+                button.onclick = () => checkAnswer(option, question.capital);
+                optionsContainer.appendChild(button);
+            });
+            
+            document.getElementById('next-btn').style.display = 'none';
+        }
+
+        // Получить варианты ответов (правильный + 3 случайных неправильных)
+        function getOptions(correctAnswer) {
+            // Собрать все столицы из всех уровней
+            const allCapitals = [];
+            for (let level in questions) {
+                questions[level].forEach(q => allCapitals.push(q.capital));
+            }
+            
+            const options = [correctAnswer];
+            
+            // Добавить 3 случайных неправильных ответа
+            while (options.length < 4) {
+                const randomCapital = allCapitals[Math.floor(Math.random() * allCapitals.length)];
+                if (!options.includes(randomCapital)) {
+                    options.push(randomCapital);
+                }
+            }
+            
+            // Перемешать варианты
+            shuffleArray(options);
+            return options;
+        }
+
+        // Проверить ответ
+        function checkAnswer(selectedAnswer, correctAnswer) {
+            const options = document.querySelectorAll('.option-btn');
+            let isCorrect = false;
+            
+            options.forEach(option => {
+                // Отключить все кнопки
+                option.disabled = true;
+                
+                // Подсветить правильный ответ
+                if (option.textContent === correctAnswer) {
+                    option.classList.add('correct');
+                }
+                
+                // Подсветить неправильный ответ, если выбран
+                if (option.textContent === selectedAnswer && selectedAnswer !== correctAnswer) {
+                    option.classList.add('incorrect');
+                    isCorrect = false;
+                }
+            });
+            
+            // Проверить, правильный ли ответ
+            if (selectedAnswer === correctAnswer) {
+                isCorrect = true;
+                score++;
+            }
+            
+            // Показать кнопку "Следующий вопрос"
+            document.getElementById('next-btn').style.display = 'block';
+        }
+
+        // Следующий вопрос
+        function nextQuestion() {
+            currentQuestionIndex++;
+            
+            if (currentQuestionIndex < 5) {
+                showQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        // Показать результаты
+        function showResults() {
+            showScreen('result-screen');
+            document.getElementById('final-score').textContent = `${score}/5`;
+            
+            let message = '';
+            if (score === 5) {
+                message = 'Отлично! Вы настоящий эксперт по столицам!';
+            } else if (score >= 3) {
+                message = 'Хорошо! Есть куда стремиться!';
+            } else {
+                message = 'Попробуйте еще раз!';
+            }
+            
+            document.getElementById('result-message').textContent = message;
+        }
+
+        // Начать заново
+        function restartGame() {
+            showScreen('level-screen');
+        }
+
+        // Показать определенный экран
+        function showScreen(screenId) {
+            // Скрыть все экраны
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Показать нужный экран
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // Перемешать массив
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+    </script>
+</body>
+</html>
+<style>
+
+</style>
+<script>
+
+</script>
